@@ -164,3 +164,15 @@ de_novo_filtered <- de_novo_ab_filtered %>%
     nchar(REF) <= 10,
     nchar(ALT) <= 10
   )
+
+# ------------------------------------------------------------
+# SAVE FINAL CANDIDATES
+# ------------------------------------------------------------
+
+write.table(
+  de_novo_filtered,
+  "de_novo_candidates_filtered.tsv",
+  sep = "\t",
+  quote = FALSE,
+  row.names = FALSE
+)
