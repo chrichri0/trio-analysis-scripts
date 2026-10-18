@@ -6,6 +6,11 @@
 #SBATCH -J alignment_child
 #SBATCH --mail-type=ALL
 
+# This script shows the alignment workflow for the child sample.
+# The same workflow was applied independently to the father and mother,
+# using the corresponding FASTQ files, sample-specific read-group information,
+# and output filenames.
+
 # ------------------------------------------------------------
 # LOAD SOFTWARE
 # ------------------------------------------------------------
