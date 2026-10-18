@@ -7,14 +7,6 @@
 #SBATCH --mail-type=ALL
 
 # ------------------------------------------------------------
-# EXTRA SAFETY SETTING
-# Stop the script if an important command fails or an undefined
-# variable is accidentally used.
-# ------------------------------------------------------------
-
-set -euo pipefail
-
-# ------------------------------------------------------------
 # LOAD SOFTWARE
 # ------------------------------------------------------------
 
@@ -31,53 +23,13 @@ WORKSPACE="$PROJECT_FOLDER/cristina"
 
 OUTPUT_CRAM="$WORKSPACE/child_aligned.cram"
 
-# Temporary files are stored in node-local $TMPDIR,
-# NOT in permanent project storage.
+# Temporary files will be stored in node-local $TMPDIR
 INTERMEDIATE_SAM="$TMPDIR/aligned_reads_child.sam"
 INTERMEDIATE_BAM="$TMPDIR/aligned_reads_child.bam"
 
 # ------------------------------------------------------------
-# OPTIONAL SAFETY CHECKS
-# These verify that the required directories/files exist before
-# spending hours running the alignment.
-# ------------------------------------------------------------
-
-if [[ ! -d "$WORKSPACE" ]]; then
-echo "ERROR: Workspace does not exist: $WORKSPACE"
-exit 1
-fi
-
-if [[ ! -r "$REF/Homo_sapiens.GRCh38.dna.primary_assembly.fa" ]]; then
-echo "ERROR: Reference genome cannot be found or read."
-exit 1
-fi
-
-if [[ ! -r "$PROJECT_FOLDER/case1/child/forward.fq.gz" ]]; then
-echo "ERROR: Child forward FASTQ cannot be found or read."
-exit 1
-fi
-
-if [[ ! -r "$PROJECT_FOLDER/case1/child/reverse.fq.gz" ]]; then
-echo "ERROR: Child reverse FASTQ cannot be found or read."
-exit 1
-fi
-
-# ------------------------------------------------------------
-# OPTIONAL BUT USEFUL LOGGING
-# This information will appear in the Slurm output file.
-# ------------------------------------------------------------
-
-echo "========================================"
-echo "Starting alignment: child"
-echo "Node:        $(hostname)"
-echo "TMPDIR:      $TMPDIR"
-echo "Output CRAM: $OUTPUT_CRAM"
-echo "Start time:  $(date)"
-echo "========================================"
-
-# ------------------------------------------------------------
-# STEP 1A: Align paired-end reads to the GRCh38 reference.
-# The large SAM file is written to $TMPDIR.
+# STEP 1: Align paired-end reads to the GRCh38 reference
+# The  SAM file is written to $TMPDIR
 # ------------------------------------------------------------
 
 bwa-mem2 mem -t 16 \
@@ -88,8 +40,8 @@ bwa-mem2 mem -t 16 \
 > "$INTERMEDIATE_SAM"
 
 # ------------------------------------------------------------
-# STEP 1B: Sort SAM and convert it to BAM.
-# The BAM also remains in $TMPDIR.
+# STEP 2: Sort SAM and convert it to BAM
+# The BAM also remains in $TMPDIR
 # ------------------------------------------------------------
 
 samtools sort -@ 16 \
@@ -97,8 +49,8 @@ samtools sort -@ 16 \
 "$INTERMEDIATE_SAM"
 
 # ------------------------------------------------------------
-# STEP 1C: Convert BAM to CRAM.
-# The final CRAM is written permanently to your workspace.
+# STEP 3: Convert BAM to CRAM
+# The final CRAM is written permanently to our workspace
 # ------------------------------------------------------------
 
 samtools view -@ 16 \
@@ -108,27 +60,8 @@ samtools view -@ 16 \
 "$INTERMEDIATE_BAM"
 
 # ------------------------------------------------------------
-# STEP 1D: Index the final CRAM file.
+# STEP 4: Index the final CRAM file
 # ------------------------------------------------------------
 
 samtools index "$OUTPUT_CRAM"
 
-# ------------------------------------------------------------
-# Remove temporary intermediate SAM and BAM files.
-# $TMPDIR would also be cleaned after the job finishes.
-# ------------------------------------------------------------
-
-rm "$INTERMEDIATE_SAM" "$INTERMEDIATE_BAM"
-
-# ------------------------------------------------------------
-# OPTIONAL BUT USEFUL LOGGING
-# Because set -e is enabled, this point should only be reached
-# if all preceding commands completed successfully.
-# ------------------------------------------------------------
-
-echo "========================================"
-echo "Alignment completed successfully: child"
-echo "CRAM:        $OUTPUT_CRAM"
-echo "CRAM index:  ${OUTPUT_CRAM}.crai"
-echo "Finish time: $(date)"
-echo "========================================"
